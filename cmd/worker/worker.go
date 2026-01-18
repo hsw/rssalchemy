@@ -79,6 +79,9 @@ func main() {
 
 	pwe, err := pwextractor.New(pwextractor.Config{
 		Proxy: cfg.Proxy,
+		FlareSolverrURL:        cfg.FlareSolverrURL,
+		FlareSolverrMaxTimeout: cfg.FlareSolverrMaxTimeout,
+		FlareSolverrWait:       cfg.FlareSolverrWait,
 		DateParser: &dateparser.DateParser{
 			CurrentTimeFunc: time.Now,
 		},

@@ -5,7 +5,20 @@
 
 ---
 
-**RSSAlchemy** is a website-to-rss converter, like RSSHub, RSS-bridge or Rss.app. Here are main features:
+**RSSAlchemy** is a website-to-rss converter, like RSSHub, RSS-bridge or Rss.app.
+
+## Fork Notice
+
+This repository is a fork of `https://github.com/egor3f/rssalchemy`.
+
+Notable changes in this fork:
+- Replaced the embedded Playwright browser with FlareSolverr (https://github.com/FlareSolverr/FlareSolverr) for page rendering and screenshots.
+- Updated deployment to include a `flaresolverr` service and related configuration (`FLARESOLVERR_URL`, timeouts, wait).
+- Kept cookie handling via `CookieManager` while relying on FlareSolverr for page fetch and HTML output.
+
+---
+
+Here are main features:
 
 - Convert arbitrary website to RSS feed using CSS selectors
 - Dynamic websites are supported using headless chrome (playwright)

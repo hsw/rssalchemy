@@ -17,6 +17,11 @@ type Config struct {
 	Debug            bool   `env:"DEBUG"`
 	// Format: scheme://user:pass@host:port (supported schemes: http, https, socks)
 	Proxy string `env:"PROXY" env-default:"" validate:"omitempty,proxy"`
+	FlareSolverrURL string `env:"FLARESOLVERR_URL" env-default:"http://localhost:8191" validate:"url"`
+	// Max time to wait for FlareSolverr to solve a request (milliseconds)
+	FlareSolverrMaxTimeout int `env:"FLARESOLVERR_MAX_TIMEOUT_MS" env-default:"60000" validate:"number,gt=0"`
+	// Optional wait time after challenge is solved (seconds)
+	FlareSolverrWait int `env:"FLARESOLVERR_WAIT_SECONDS" env-default:"0" validate:"number,gte=0"`
 	// TaskRateLimitEvery and TaskRateLimitBurst are parameters for Token Bucket algorithm
 	// for task rate limiter (don't apply to cache).
 	// A token is added to the bucket every TaskRateLimitEvery seconds.

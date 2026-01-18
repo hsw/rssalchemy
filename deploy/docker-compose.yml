@@ -18,10 +18,7 @@ services:
     depends_on:
       - nats
       - redis
-    ipc: host
-    user: pwuser
-    security_opt:
-      - seccomp:seccomp_profile.json
+      - flaresolverr
     deploy:
       replicas: 1
     restart: unless-stopped
@@ -36,6 +33,12 @@ services:
 
   redis:
     image: redis:7.4
+    restart: unless-stopped
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    environment:
+      - LOG_LEVEL=info
     restart: unless-stopped
 
 volumes:

@@ -65,6 +65,9 @@ func main() {
 
 	pwe, err := pwextractor.New(pwextractor.Config{
 		Proxy: cfg.Proxy,
+		FlareSolverrURL:        cfg.FlareSolverrURL,
+		FlareSolverrMaxTimeout: cfg.FlareSolverrMaxTimeout,
+		FlareSolverrWait:       cfg.FlareSolverrWait,
 		DateParser: &dateparser.DateParser{
 			CurrentTimeFunc: func() time.Time {
 				return time.Date(2025, 01, 10, 10, 00, 00, 00, time.UTC)

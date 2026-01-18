@@ -3,7 +3,6 @@ package pwextractor
 import (
 	"fmt"
 	"github.com/jellydator/ttlcache/v3"
-	"github.com/playwright-community/playwright-go"
 	"net"
 	"net/url"
 	"slices"
@@ -11,48 +10,57 @@ import (
 	"time"
 )
 
-func absUrl(link string, page playwright.Page) string {
-	if len(link) == 0 {
+type urlParts = url.URL
+
+func parseURL(raw string) *urlParts {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return nil
+	}
+	return parsed
+}
+
+func absURL(link string, baseURL *urlParts) string {
+	if strings.TrimSpace(link) == "" {
 		return ""
 	}
-	if strings.HasPrefix(link, "/") {
-		pageUrl, _ := url.Parse(page.URL())
-		link = fmt.Sprintf("%s://%s%s", pageUrl.Scheme, pageUrl.Host, link)
+	if baseURL == nil {
+		return link
 	}
-	//log.Debugf("link=%s", link)
-	return link
-}
-
-// pwDuration converts string like "10s" to milliseconds float64 pointer
-// needed for Playwright timeouts (wtf? why they don't use normal Durations?)
-func pwDuration(s string) *float64 {
-	dur, err := time.ParseDuration(s)
+	parsed, err := url.Parse(link)
 	if err != nil {
-		panic(fmt.Errorf("failed to parse duration %s: %w", s, err))
+		return link
 	}
-	f64 := float64(dur.Milliseconds())
-	return &f64
+	if parsed.IsAbs() {
+		return parsed.String()
+	}
+	return baseURL.ResolveReference(parsed).String()
 }
 
-func parseProxy(s string) (*playwright.Proxy, error) {
-	var proxy *playwright.Proxy
-	if len(s) > 0 {
-		proxyUrl, err := url.Parse(s)
-		if err != nil {
-			return nil, err
+func parseProxy(s string) (*flareProxy, bool, string, error) {
+	if strings.TrimSpace(s) == "" {
+		return nil, false, "", nil
+	}
+	proxyUrl, err := url.Parse(s)
+	if err != nil {
+		return nil, false, "", err
+	}
+	urlWithoutUser := *proxyUrl
+	urlWithoutUser.User = nil
+	proxy := &flareProxy{Url: urlWithoutUser.String()}
+
+	hasAuth := false
+	if proxyUrl.User != nil {
+		proxy.Username = proxyUrl.User.Username()
+		if pass, exist := proxyUrl.User.Password(); exist {
+			proxy.Password = pass
+			hasAuth = true
 		}
-		urlWithoutUser := *proxyUrl
-		urlWithoutUser.User = nil
-		proxy = &playwright.Proxy{Server: urlWithoutUser.String()}
-		if proxyUrl.User != nil {
-			user := proxyUrl.User.Username()
-			proxy.Username = &user
-			if pass, exist := proxyUrl.User.Password(); exist {
-				proxy.Password = &pass
-			}
+		if proxy.Username != "" {
+			hasAuth = true
 		}
 	}
-	return proxy, nil
+	return proxy, hasAuth, proxyUrl.Hostname(), nil
 }
 
 // parseBaseDomain extracts second-level domain from url, e.g.
@@ -121,4 +129,21 @@ func getIPs(host string) ([]net.IP, error) {
 		return nil, fmt.Errorf("lookip ip: not resolved")
 	}
 	return ips, nil
+}
+
+func (e *PwExtractor) allowHost(rawUrl string) (bool, error) {
+	ips, err := getIPs(rawUrl)
+	if err != nil {
+		return false, fmt.Errorf("allow host get ips: %w", err)
+	}
+	for _, ip := range ips {
+		deny := ip.IsPrivate() || ip.IsLoopback() || ip.IsUnspecified() || ip.IsLinkLocalUnicast() || ip.IsMulticast()
+		if e.proxyIP != nil {
+			deny = deny || e.proxyIP.Equal(ip)
+		}
+		if deny {
+			return false, nil
+		}
+	}
+	return true, nil
 }
