@@ -15,7 +15,7 @@ RUN go mod download
 
 COPY . .
 COPY --from=frontend /buildfront/dist ./frontend/wizard-vue/dist
-RUN go build -o bin/webserver github.com/egor3f/rssalchemy/cmd/webserver
+RUN go build -o bin/webserver ./cmd/webserver
 
 EXPOSE 8080
 CMD ["/app/bin/webserver"]
