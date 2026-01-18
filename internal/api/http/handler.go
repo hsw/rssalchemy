@@ -271,15 +271,30 @@ func makeFeed(task models.Task, result models.TaskResult) (string, error) {
 		if len(itemUrl.RawQuery) > 0 {
 			id += "?" + itemUrl.RawQuery
 		}
+		content := item.Content
+		description := item.Description
+		var enclosure *feeds.Enclosure
+		if item.Enclosure != "" {
+			enclosureURL := absURL(item.Enclosure, task.URL)
+			enclosure = &feeds.Enclosure{Url: enclosureURL}
+			escapedURL := html.EscapeString(enclosureURL)
+			imageHTML := fmt.Sprintf(`<img src="%s" alt="" />`, escapedURL)
+			if content != "" {
+				content = imageHTML + content
+			} else if description != "" {
+				description = imageHTML + description
+			}
+		}
 		feed.Items = append(feed.Items, &feeds.Item{
 			Id:          id,
 			Title:       html.EscapeString(item.Title),
 			Link:        &feeds.Link{Href: item.Link},
 			Author:      &feeds.Author{Name: item.AuthorName},
-			Description: item.Description,
+			Description: description,
 			Created:     item.Created,
 			Updated:     item.Updated,
-			Content:     item.Content,
+			Enclosure:   enclosure,
+			Content:     content,
 		})
 	}
 	if len(feed.Items) == 0 {
@@ -317,4 +332,19 @@ func anyTimeFormat(format string, times ...time.Time) string {
 		}
 	}
 	return ""
+}
+
+func absURL(rawURL string, baseURL string) string {
+	if rawURL == "" {
+		return ""
+	}
+	parsed, err := url.Parse(rawURL)
+	if err != nil || parsed.IsAbs() {
+		return rawURL
+	}
+	base, err := url.Parse(baseURL)
+	if err != nil {
+		return rawURL
+	}
+	return base.ResolveReference(parsed).String()
 }
